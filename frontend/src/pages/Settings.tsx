@@ -1,36 +1,42 @@
-import { useState } from 'react';
-import { Settings, Save, Eye, EyeOff, Info, Wifi, RefreshCw, CheckCircle, Cpu } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Settings, Save, Eye, EyeOff, Info, Wifi, RefreshCw, CheckCircle, Cpu, ExternalLink } from 'lucide-react';
 import type { McpConnectionState } from '@/hooks/useXiaoZhi';
-import { XIAOZHI_WS_URL } from '@/lib/xiaozhi';
 
 type Props = {
   onRefreshStatus: () => void;
   xiaozhiState: McpConnectionState;
+  xiaozhiError: string | null;
 };
 
 type Config = {
   cameraIp: string;
   armIp: string;
   geminiKey: string;
-  spotifyClientId: string;
-  spotifyClientSecret: string;
   sofiaName: string;
   language: string;
 };
 
-export default function SettingsPage({ onRefreshStatus, xiaozhiState }: Props) {
+const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+
+export default function SettingsPage({ onRefreshStatus, xiaozhiState, xiaozhiError }: Props) {
   const [config, setConfig] = useState<Config>({
     cameraIp: '192.168.1.9',
     armIp: '192.168.1.7',
     geminiKey: '',
-    spotifyClientId: '',
-    spotifyClientSecret: '',
     sofiaName: 'Sofía',
     language: 'es-ES',
   });
   const [showGemini, setShowGemini] = useState(false);
-  const [showSpotify, setShowSpotify] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [spotifyMessage, setSpotifyMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('spotifyMcp') === 'connected') {
+      setSpotifyMessage('Spotify quedó autorizado para las herramientas de XiaoZhi.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   function save() {
     localStorage.setItem('sofia_config', JSON.stringify(config));
@@ -85,16 +91,13 @@ export default function SettingsPage({ onRefreshStatus, xiaozhiState }: Props) {
             {xiaozhiState === 'connected' ? 'Conectado a XiaoZhi' :
              xiaozhiState === 'connecting' ? 'Conectando con XiaoZhi...' : 'Sin conexión MCP'}
           </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Endpoint WSS</label>
-            <p className="text-xs font-mono text-gray-600 bg-gray-50 rounded-xl px-3 py-2 break-all border border-gray-100">
-              {XIAOZHI_WS_URL.replace(/token=.*/, 'token=••••••••')}
-            </p>
-          </div>
           <div className="flex items-start gap-2 text-xs text-blue-700 bg-blue-50 rounded-xl p-3">
             <Info size={13} className="flex-shrink-0 mt-0.5" />
-            <p>El token JWT está integrado en la app y se conecta automáticamente al iniciar. La conexión se restablece sola si se cae.</p>
+            <p>Render mantiene la conexión MCP y vuelve a conectarse si se interrumpe. El token se configura como secreto en Render y no se publica en el navegador.</p>
           </div>
+          {xiaozhiError && (
+            <p role="alert" className="text-xs text-red-600">{xiaozhiError}</p>
+          )}
         </div>
       </Section>
 
@@ -125,28 +128,17 @@ export default function SettingsPage({ onRefreshStatus, xiaozhiState }: Props) {
 
       {/* Spotify */}
       <Section title="Spotify" icon={<Settings size={15} className="text-blue-500" />}>
-        <div className="space-y-4">
-          <Field
-            label="Client ID de Spotify"
-            value={config.spotifyClientId}
-            onChange={(v) => setConfig((c) => ({ ...c, spotifyClientId: v }))}
-            placeholder="Desde el panel de desarrolladores de Spotify"
-          />
-          <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Client Secret</label>
-            <div className="relative">
-              <input
-                type={showSpotify ? 'text' : 'password'}
-                value={config.spotifyClientSecret}
-                onChange={(e) => setConfig((c) => ({ ...c, spotifyClientSecret: e.target.value }))}
-                placeholder="••••••••••••••••"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button onClick={() => setShowSpotify((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                {showSpotify ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-          </div>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">Autoriza al backend de Render para que XiaoZhi pueda buscar canciones y controlar la reproducción en Spotify.</p>
+          {spotifyMessage && <p role="status" className="text-sm text-emerald-700">{spotifyMessage}</p>}
+          <a
+            href={`${API_URL}/api/spotify/auth`}
+            className="inline-flex items-center gap-2 bg-[#1DB954] text-white font-semibold px-4 py-2.5 rounded-xl hover:bg-[#1aa34a] transition-colors"
+          >
+            <ExternalLink size={15} />
+            Autorizar Spotify para XiaoZhi
+          </a>
+          <p className="text-xs text-gray-500">Requiere configurar las variables de Spotify en Render y registrar allí la Redirect URI del backend.</p>
         </div>
       </Section>
 

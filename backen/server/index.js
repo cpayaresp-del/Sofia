@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient } from 'mongodb';
+import { createSpotifyRouter, createSpotifyTools } from './spotify.js';
+import { XiaoZhiMcpBridge } from './xiaozhi-mcp.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -27,6 +29,16 @@ function serialize(document) {
 function limitFrom(request) {
   return Math.min(Math.max(Number(request.query.limit) || 20, 1), 100);
 }
+
+const spotifyRouter = createSpotifyRouter({ getDatabase });
+app.use('/api/spotify', spotifyRouter);
+
+const mcp = new XiaoZhiMcpBridge({
+  tools: createSpotifyTools(),
+  searchApiKey: process.env.TAVILY_API_KEY,
+  getDatabase,
+});
+app.get('/api/mcp/status', (_request, response) => response.json(mcp.status()));
 
 app.get('/api/health', (_request, response) => response.json({ status: 'ok' }));
 
@@ -83,8 +95,13 @@ app.use((error, _request, response, _next) => {
 });
 
 app.listen(port, () => console.log(`API MongoDB escuchando en http://localhost:${port}`));
+mcp.connect();
 
-process.on('SIGINT', async () => {
+async function shutdown() {
+  mcp.disconnect();
   await mongoClient.close();
   process.exit(0);
-});
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

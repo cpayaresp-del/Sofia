@@ -12,14 +12,6 @@ type Props = {
   mcpTools: McpTool[];
 };
 
-const TOOLS = [
-  { name: 'consultar_camara', desc: 'Toma una foto y la analiza con IA' },
-  { name: 'mover_articulaciones', desc: 'Controla las 3 articulaciones del brazo' },
-  { name: 'detener_servo', desc: 'Detiene una articulación específica' },
-  { name: 'detener_servos', desc: 'Detiene todos los servos' },
-  { name: 'estado_brazo', desc: 'Consulta el estado del brazo robótico' },
-];
-
 const ICON_MAP: Record<ActivityLog['type'], React.ElementType> = {
   camera: Camera,
   arm: Wrench,
@@ -60,7 +52,7 @@ export default function Home({ status, sofiaState, logs, onNavigate, mcpTools }:
         <div>
           <p className="font-bold text-xl">Hola, soy Sofía.</p>
           <p className="text-blue-100 text-sm mt-0.5">
-            Estoy aquí para ayudarte. Puedes pedirme que vea la cámara, mueva el brazo robótico o cualquier otra cosa.
+            Desde XiaoZhi puedes pedirme que busque información o controle Spotify cuando esté autorizado.
           </p>
         </div>
         <span className={`ml-auto text-xs px-2 py-1 rounded-full font-medium bg-white/20 capitalize ${
@@ -146,16 +138,16 @@ export default function Home({ status, sofiaState, logs, onNavigate, mcpTools }:
         </div>
       </div>
 
-      {/* Available tools — real XiaoZhi tools or fallback list */}
+      {/* Tools offered to XiaoZhi */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Cpu size={16} className="text-blue-500" />
-            <h3 className="font-semibold text-gray-800">Herramientas MCP disponibles</h3>
+            <h3 className="font-semibold text-gray-800">Herramientas ofrecidas a XiaoZhi</h3>
           </div>
           {mcpTools.length > 0 && (
             <span className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">
-              {mcpTools.length} desde XiaoZhi
+              {mcpTools.length} disponibles
             </span>
           )}
         </div>
@@ -174,19 +166,9 @@ export default function Home({ status, sofiaState, logs, onNavigate, mcpTools }:
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {TOOLS.map((tool) => (
-              <div key={tool.name} className="flex items-start gap-2.5 p-3 bg-gray-50 rounded-xl">
-                <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-800 font-mono">{tool.name}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">{tool.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-gray-500">
+            No se han recibido herramientas del backend. Comprueba la conexión MCP y su configuración en Render.
+          </p>
         )}
       </div>
     </div>

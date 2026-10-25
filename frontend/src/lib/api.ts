@@ -12,6 +12,12 @@ export type ActivityLog = {
   created_at: string;
 };
 
+export type McpStatus = {
+  state: 'disconnected' | 'connecting' | 'connected' | 'error';
+  error: string | null;
+  tools: { name: string; description?: string }[];
+};
+
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -24,6 +30,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  mcp: {
+    status: () => request<McpStatus>('/mcp/status'),
+  },
   chat: {
     list: (limit = 50) => request<ChatMessage[]>(`/chat-messages?limit=${limit}`),
     create: (message: Omit<ChatMessage, 'id'>) => request<ChatMessage>('/chat-messages', {

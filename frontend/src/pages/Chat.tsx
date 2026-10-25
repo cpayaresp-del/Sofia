@@ -23,8 +23,8 @@ type SpeechRecognitionLike = {
 };
 
 const MCP_STATE_LABEL: Record<McpConnectionState, string> = {
-  connected: 'XiaoZhi conectado',
-  connecting: 'Conectando con XiaoZhi...',
+  connected: 'Herramientas conectadas con XiaoZhi',
+  connecting: 'Conectando herramientas con XiaoZhi...',
   disconnected: 'XiaoZhi desconectado',
   error: 'Error de conexión MCP',
 };
@@ -162,7 +162,7 @@ export default function ChatPage({ setSofiaState, addLog, xiaozhiChat, xiaozhiSt
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Chat y Voz</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Habla o escribe a Sofía · XiaoZhi MCP</p>
+          <p className="text-sm text-gray-500 mt-0.5">MCP comparte herramientas con XiaoZhi; no es un canal de conversación.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -205,6 +205,9 @@ export default function ChatPage({ setSofiaState, addLog, xiaozhiChat, xiaozhiSt
           </span>
         )}
       </div>
+      <p className="text-xs text-gray-500 mb-3">
+        Cuando la conexión esté activa, pide al agente XiaoZhi que busque información o controle Spotify. Esta página no envía mensajes de chat al agente.
+      </p>
 
       {/* Error banner */}
       {error && (
@@ -276,7 +279,7 @@ export default function ChatPage({ setSofiaState, addLog, xiaozhiChat, xiaozhiSt
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
           placeholder={
             xiaozhiState === 'connected'
-              ? 'Escribe a Sofía o da una orden...'
+              ? 'El chat de texto no está disponible por MCP'
               : xiaozhiState === 'connecting'
               ? 'Conectando con XiaoZhi...'
               : 'XiaoZhi desconectado — revisa la red'

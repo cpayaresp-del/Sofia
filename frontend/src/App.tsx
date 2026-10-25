@@ -23,7 +23,7 @@ export default function App() {
   const [sofiaState, setSofiaState] = useState<SofiaState>('idle');
   const { status: hwStatus, refresh } = useSystemStatus();
   const { logs, addLog } = useActivityLog();
-  const { state: xiaozhiState, tools, chat: xiaozhiChat } = useXiaoZhi();
+  const { state: xiaozhiState, tools, error: xiaozhiError, chat: xiaozhiChat } = useXiaoZhi();
   const [clock, setClock] = useState(new Date());
 
   // Re-render clock every minute for header
@@ -73,7 +73,7 @@ export default function App() {
             />
           )}
           {page === 'settings' && (
-            <SettingsPage onRefreshStatus={refresh} xiaozhiState={xiaozhiState} />
+            <SettingsPage onRefreshStatus={refresh} xiaozhiState={xiaozhiState} xiaozhiError={xiaozhiError} />
           )}
         </main>
 
