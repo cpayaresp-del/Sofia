@@ -4,6 +4,7 @@ import {
   Wrench,
   Settings,
   Music,
+  Search,
   MessageSquare,
   Bot,
   Wifi,
@@ -23,6 +24,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: 'camera', label: 'Cámara', icon: Camera },
   { id: 'arm', label: 'Brazo Robótico', icon: Wrench },
   { id: 'music', label: 'Música', icon: Music },
+  { id: 'web', label: 'Web', icon: Search },
   { id: 'chat', label: 'Chat y Voz', icon: MessageSquare },
   { id: 'settings', label: 'Configuración', icon: Settings },
 ];

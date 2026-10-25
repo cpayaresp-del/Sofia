@@ -5,6 +5,7 @@ import Home from '@/pages/Home';
 import CameraPage from '@/pages/Camera';
 import ArmPage from '@/pages/RoboticArm';
 import MusicPage from '@/pages/Music';
+import WebPage from '@/pages/Web';
 import ChatPage from '@/pages/Chat';
 import SettingsPage from '@/pages/Settings';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
@@ -64,6 +65,7 @@ export default function App() {
           {page === 'music' && (
             <MusicPage addLog={(type, desc) => addLog(type, desc)} />
           )}
+          {page === 'web' && <WebPage />}
           {page === 'chat' && (
             <ChatPage
               setSofiaState={setSofiaState}

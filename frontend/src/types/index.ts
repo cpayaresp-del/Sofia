@@ -1,4 +1,4 @@
-export type Page = 'home' | 'camera' | 'arm' | 'music' | 'chat' | 'settings';
+export type Page = 'home' | 'camera' | 'arm' | 'music' | 'web' | 'chat' | 'settings';
 
 export type SystemStatus = {
   camera: 'online' | 'offline' | 'connecting';

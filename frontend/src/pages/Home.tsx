@@ -1,4 +1,4 @@
-import { Camera, Wrench, Bot, Music, Clock, Activity, Cpu } from 'lucide-react';
+import { Camera, Wrench, Bot, Music, Search, Clock, Activity, Cpu } from 'lucide-react';
 import type { SystemStatus, SofiaState } from '@/types';
 import type { ActivityLog } from '@/lib/api';
 import type { McpTool } from '@/hooks/useXiaoZhi';
@@ -52,7 +52,7 @@ export default function Home({ status, sofiaState, logs, onNavigate, mcpTools }:
         <div>
           <p className="font-bold text-xl">Hola, soy Sofía.</p>
           <p className="text-blue-100 text-sm mt-0.5">
-            Desde XiaoZhi puedes pedirme que busque información o controle Spotify cuando esté autorizado.
+            Desde XiaoZhi puedes pedirme que busque información en Internet o encuentre videos en YouTube.
           </p>
         </div>
         <span className={`ml-auto text-xs px-2 py-1 rounded-full font-medium bg-white/20 capitalize ${
@@ -63,12 +63,13 @@ export default function Home({ status, sofiaState, logs, onNavigate, mcpTools }:
       </div>
 
       {/* Quick access cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
         {[
           { page: 'camera' as const, icon: Camera, label: 'Cámara en vivo', sub: '192.168.1.9', color: 'text-blue-500', bg: 'bg-blue-50', state: status.camera },
           { page: 'arm' as const, icon: Wrench, label: 'Brazo Robótico', sub: '192.168.1.7', color: 'text-violet-500', bg: 'bg-violet-50', state: status.arm },
           { page: 'chat' as const, icon: Bot, label: 'Chat con Sofía', sub: 'XiaoZhi MCP', color: 'text-emerald-500', bg: 'bg-emerald-50', state: status.xiaozhi },
-          { page: 'music' as const, icon: Music, label: 'Música Spotify', sub: 'Reproducción', color: 'text-pink-500', bg: 'bg-pink-50', state: 'online' as const },
+          { page: 'music' as const, icon: Music, label: 'YouTube', sub: 'Música y videos', color: 'text-red-500', bg: 'bg-red-50', state: 'online' as const },
+          { page: 'web' as const, icon: Search, label: 'Búsqueda web', sub: 'DuckDuckGo', color: 'text-cyan-600', bg: 'bg-cyan-50', state: 'online' as const },
         ].map(({ page, icon: Icon, label, sub, color, bg, state }) => (
           <button
             key={page}

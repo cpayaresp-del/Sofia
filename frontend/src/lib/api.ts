@@ -18,6 +18,12 @@ export type McpStatus = {
   tools: { name: string; description?: string }[];
 };
 
+export type WebSearchResult = {
+  title: string;
+  url: string;
+  snippet: string;
+};
+
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -25,13 +31,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? `La solicitud falló (${response.status}).`);
+  }
   return response.json() as Promise<T>;
 }
 
 export const api = {
   mcp: {
     status: () => request<McpStatus>('/mcp/status'),
+  },
+  web: {
+    search: (query: string) => request<{ results: WebSearchResult[] }>(`/search?q=${encodeURIComponent(query)}`),
   },
   chat: {
     list: (limit = 50) => request<ChatMessage[]>(`/chat-messages?limit=${limit}`),

@@ -1,16 +1,16 @@
 import WebSocket from 'ws';
+import { searchWeb } from './web-search.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 const RECONNECT_DELAY_MS = 5000;
 const CONNECT_TIMEOUT_MS = 15000;
-const SEARCH_URL = 'https://api.tavily.com/search';
 
 function textResult(text, isError = false) {
   return { content: [{ type: 'text', text }], isError };
 }
 
 export class XiaoZhiMcpBridge {
-  constructor({ tools, searchApiKey, getDatabase }) {
+  constructor({ getDatabase }) {
     this.tools = {
       buscar_en_internet: {
         description: 'Busca información reciente en Internet y resume los resultados con sus enlaces.',
@@ -21,9 +21,22 @@ export class XiaoZhiMcpBridge {
         },
         handler: (args) => this.searchWeb(args),
       },
-      ...tools,
+      buscar_en_youtube: {
+        description: 'Busca videos y música en YouTube y devuelve sus enlaces.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            consulta: {
+              type: 'string',
+              maxLength: 270,
+              description: 'Qué video o canción quieres buscar.',
+            },
+          },
+          required: ['consulta'],
+        },
+        handler: (args) => this.searchYouTube(args),
+      },
     };
-    this.searchApiKey = searchApiKey;
     this.getDatabase = getDatabase;
     this.state = process.env.XIAOZHI_MCP_TOKEN ? 'disconnected' : 'error';
     this.lastError = process.env.XIAOZHI_MCP_TOKEN ? null : 'Falta XIAOZHI_MCP_TOKEN en las variables de entorno.';
@@ -112,29 +125,16 @@ export class XiaoZhiMcpBridge {
 
   async searchWeb(args) {
     const query = typeof args.consulta === 'string' ? args.consulta.trim() : '';
-    if (!query || query.length > 300) throw new Error('La consulta debe tener entre 1 y 300 caracteres.');
-    if (!this.searchApiKey) throw new Error('La búsqueda web no está configurada. Añade TAVILY_API_KEY en Render.');
+    const results = await searchWeb(query);
+    return textResult(formatResults(results));
+  }
 
-    const response = await fetch(SEARCH_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: this.searchApiKey,
-        query,
-        search_depth: 'basic',
-        max_results: 5,
-        include_answer: true,
-        include_raw_content: false,
-      }),
-    });
-    if (!response.ok) throw new Error(`El proveedor de búsqueda respondió HTTP ${response.status}.`);
-    const data = await response.json();
-    const results = Array.isArray(data.results) ? data.results : [];
-    const answer = typeof data.answer === 'string' ? `${data.answer}\n\n` : '';
-    const links = results.map((result, index) =>
-      `${index + 1}. ${result.title ?? 'Resultado'}\n${result.content ?? ''}\n${result.url ?? ''}`,
-    ).join('\n\n');
-    return textResult(answer + (links || 'No se encontraron resultados.'));
+  async searchYouTube(args) {
+    const query = typeof args.consulta === 'string' ? args.consulta.trim() : '';
+    if (!query) throw new Error('Escribe qué video o canción quieres buscar.');
+    if (query.length > 270) throw new Error('La búsqueda de YouTube no puede superar los 270 caracteres.');
+    const results = await searchWeb(`site:youtube.com/watch ${query}`);
+    return textResult(formatResults(results));
   }
 
   async handleMessage(data) {
@@ -144,6 +144,13 @@ export class XiaoZhiMcpBridge {
     } catch {
       console.error('XiaoZhi envió un mensaje MCP con JSON inválido.');
       return;
+    }
+
+    function formatResults(results) {
+      if (results.length === 0) return 'No se encontraron resultados.';
+      return results.map((result, index) =>
+        `${index + 1}. ${result.title}\n${result.snippet}\n${result.url}`,
+      ).join('\n\n');
     }
     if (Array.isArray(message)) {
       for (const item of message) await this.handleRequest(item);

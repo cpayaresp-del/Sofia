@@ -2,7 +2,7 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import { MongoClient } from 'mongodb';
-import { createSpotifyRouter, createSpotifyTools } from './spotify.js';
+import { searchWeb } from './web-search.js';
 import { XiaoZhiMcpBridge } from './xiaozhi-mcp.js';
 
 const app = express();
@@ -30,17 +30,22 @@ function limitFrom(request) {
   return Math.min(Math.max(Number(request.query.limit) || 20, 1), 100);
 }
 
-const spotifyRouter = createSpotifyRouter({ getDatabase });
-app.use('/api/spotify', spotifyRouter);
-
 const mcp = new XiaoZhiMcpBridge({
-  tools: createSpotifyTools(),
-  searchApiKey: process.env.TAVILY_API_KEY,
   getDatabase,
 });
 app.get('/api/mcp/status', (_request, response) => response.json(mcp.status()));
 
 app.get('/api/health', (_request, response) => response.json({ status: 'ok' }));
+
+app.get('/api/search', async (request, response, next) => {
+  try {
+    const query = typeof request.query.q === 'string' ? request.query.q : '';
+    if (!query.trim() || query.length > 300) {
+      return response.status(400).json({ error: 'La consulta debe tener entre 1 y 300 caracteres.' });
+    }
+    response.json({ results: await searchWeb(query) });
+  } catch (error) { next(error); }
+});
 
 app.get('/api/chat-messages', async (request, response, next) => {
   try {

@@ -206,7 +206,7 @@ export default function ChatPage({ setSofiaState, addLog, xiaozhiChat, xiaozhiSt
         )}
       </div>
       <p className="text-xs text-gray-500 mb-3">
-        Cuando la conexión esté activa, pide al agente XiaoZhi que busque información o controle Spotify. Esta página no envía mensajes de chat al agente.
+        Cuando la conexión esté activa, pide al agente XiaoZhi que busque información en Internet o encuentre videos en YouTube. Esta página no envía mensajes de chat al agente.
       </p>
 
       {/* Error banner */}

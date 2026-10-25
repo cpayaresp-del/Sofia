@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Settings, Save, Eye, EyeOff, Info, Wifi, RefreshCw, CheckCircle, Cpu, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, Save, Eye, EyeOff, Info, Wifi, RefreshCw, CheckCircle, Cpu } from 'lucide-react';
 import type { McpConnectionState } from '@/hooks/useXiaoZhi';
 
 type Props = {
@@ -16,8 +16,6 @@ type Config = {
   language: string;
 };
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
 export default function SettingsPage({ onRefreshStatus, xiaozhiState, xiaozhiError }: Props) {
   const [config, setConfig] = useState<Config>({
     cameraIp: '192.168.1.9',
@@ -28,16 +26,6 @@ export default function SettingsPage({ onRefreshStatus, xiaozhiState, xiaozhiErr
   });
   const [showGemini, setShowGemini] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [spotifyMessage, setSpotifyMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('spotifyMcp') === 'connected') {
-      setSpotifyMessage('Spotify quedó autorizado para las herramientas de XiaoZhi.');
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
-
   function save() {
     localStorage.setItem('sofia_config', JSON.stringify(config));
     setSaved(true);
@@ -123,22 +111,6 @@ export default function SettingsPage({ onRefreshStatus, xiaozhiState, xiaozhiErr
             <Info size={13} className="flex-shrink-0 mt-0.5" />
             <p>La clave se guarda localmente en tu navegador y se usa para describir imágenes y generar respuestas de chat.</p>
           </div>
-        </div>
-      </Section>
-
-      {/* Spotify */}
-      <Section title="Spotify" icon={<Settings size={15} className="text-blue-500" />}>
-        <div className="space-y-3">
-          <p className="text-sm text-gray-600">Autoriza al backend de Render para que XiaoZhi pueda buscar canciones y controlar la reproducción en Spotify.</p>
-          {spotifyMessage && <p role="status" className="text-sm text-emerald-700">{spotifyMessage}</p>}
-          <a
-            href={`${API_URL}/api/spotify/auth`}
-            className="inline-flex items-center gap-2 bg-[#1DB954] text-white font-semibold px-4 py-2.5 rounded-xl hover:bg-[#1aa34a] transition-colors"
-          >
-            <ExternalLink size={15} />
-            Autorizar Spotify para XiaoZhi
-          </a>
-          <p className="text-xs text-gray-500">Requiere configurar las variables de Spotify en Render y registrar allí la Redirect URI del backend.</p>
         </div>
       </Section>
 
