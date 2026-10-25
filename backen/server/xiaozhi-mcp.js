@@ -9,6 +9,15 @@ function textResult(text, isError = false) {
   return { content: [{ type: 'text', text }], isError };
 }
 
+function describeConnectionError(error, token) {
+  const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
+  const message = error instanceof Error ? error.message : String(error);
+  const safeMessage = message
+    .replaceAll(token, '[token oculto]')
+    .replaceAll(encodeURIComponent(token), '[token oculto]');
+  return [code, safeMessage].filter(Boolean).join(': ') || 'desconocido';
+}
+
 export class XiaoZhiMcpBridge {
   constructor({ getDatabase }) {
     this.tools = {
@@ -70,8 +79,9 @@ export class XiaoZhiMcpBridge {
       this.socket = new WebSocket(endpoint);
     } catch (error) {
       this.state = 'error';
-      this.lastError = 'No se pudo abrir la conexión MCP. Revisa el token y los logs de Render.';
-      console.error('No se pudo abrir la conexión con XiaoZhi MCP:', this.lastError);
+      const details = describeConnectionError(error, process.env.XIAOZHI_MCP_TOKEN);
+      this.lastError = `No se pudo abrir la conexión MCP: ${details}`;
+      console.error(this.lastError);
       this.scheduleReconnect();
       return;
     }
@@ -92,17 +102,21 @@ export class XiaoZhiMcpBridge {
       if (this.connectionTimer) clearTimeout(this.connectionTimer);
       this.connectionTimer = null;
       this.state = 'error';
-      this.lastError = 'Error en la conexión MCP. Revisa el token y los logs de Render.';
-      console.error('Error de conexión con XiaoZhi MCP:', error.code ?? 'desconocido');
+      const details = describeConnectionError(error, process.env.XIAOZHI_MCP_TOKEN);
+      this.lastError = `Error de conexión MCP: ${details}`;
+      console.error(this.lastError);
       this.socket?.close();
     });
-    this.socket.on('close', (code) => {
+    this.socket.on('close', (code, reason) => {
       if (this.connectionTimer) clearTimeout(this.connectionTimer);
       this.connectionTimer = null;
       this.socket = null;
       if (!this.stopped) {
-        this.state = 'disconnected';
-        this.lastError = `Conexión MCP cerrada (código ${code}).`;
+        if (this.state !== 'error') {
+          const closeReason = reason.toString().trim();
+          this.state = 'disconnected';
+          this.lastError = `Conexión MCP cerrada (código ${code}${closeReason ? `: ${closeReason}` : ''}).`;
+        }
         this.scheduleReconnect();
       }
     });
