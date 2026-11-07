@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import { searchWeb } from './web-search.js';
+import { UpstreamMcpClient } from './upstream-mcp.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 const RECONNECT_DELAY_MS = 5000;
@@ -7,6 +8,13 @@ const CONNECT_TIMEOUT_MS = 15000;
 
 function textResult(text, isError = false) {
   return { content: [{ type: 'text', text }], isError };
+}
+
+function formatResults(results) {
+  if (results.length === 0) return 'No se encontraron resultados.';
+  return results.map((result, index) =>
+    `${index + 1}. ${result.title}\n${result.snippet}\n${result.url}`,
+  ).join('\n\n');
 }
 
 function describeConnectionError(error, token) {
@@ -47,6 +55,9 @@ export class XiaoZhiMcpBridge {
       },
     };
     this.getDatabase = getDatabase;
+    this.upstream = new UpstreamMcpClient(process.env.MCP_UPSTREAM_URL);
+    this.upstreamTools = {};
+    this.upstreamError = null;
     this.state = process.env.XIAOZHI_MCP_TOKEN ? 'disconnected' : 'error';
     this.lastError = process.env.XIAOZHI_MCP_TOKEN ? null : 'Falta XIAOZHI_MCP_TOKEN en las variables de entorno.';
     this.socket = null;
@@ -59,8 +70,29 @@ export class XiaoZhiMcpBridge {
     return {
       state: this.state,
       error: this.lastError,
-      tools: Object.entries(this.tools).map(([name, tool]) => ({ name, description: tool.description })),
+      tools: Object.entries(this.allTools()).map(([name, tool]) => ({ name, description: tool.description })),
     };
+  }
+
+  allTools() {
+    return { ...this.tools, ...this.upstreamTools };
+  }
+
+  async refreshUpstreamTools() {
+    if (!this.upstream.configured) return;
+    try {
+      const tools = await this.upstream.listTools();
+      this.upstreamTools = Object.fromEntries(tools.map((tool) => [tool.name, {
+        description: tool.description ?? '',
+        inputSchema: tool.inputSchema ?? { type: 'object', properties: {} },
+        handler: (args) => this.upstream.callTool(tool.name, args),
+      }]));
+      this.upstreamError = null;
+    } catch (error) {
+      this.upstreamTools = {};
+      this.upstreamError = `No se pudo leer las herramientas del servidor local: ${error.message}`;
+      console.error(this.upstreamError);
+    }
   }
 
   connect() {
@@ -92,6 +124,7 @@ export class XiaoZhiMcpBridge {
       this.state = 'connected';
       this.lastError = null;
       console.log('Conexión WebSocket con XiaoZhi establecida; esperando solicitudes MCP.');
+      this.refreshUpstreamTools();
     });
     this.socket.on('message', (data) => {
       this.handleMessage(data).catch((error) => {
@@ -160,12 +193,6 @@ export class XiaoZhiMcpBridge {
       return;
     }
 
-    function formatResults(results) {
-      if (results.length === 0) return 'No se encontraron resultados.';
-      return results.map((result, index) =>
-        `${index + 1}. ${result.title}\n${result.snippet}\n${result.url}`,
-      ).join('\n\n');
-    }
     if (Array.isArray(message)) {
       for (const item of message) await this.handleRequest(item);
       return;
@@ -193,11 +220,12 @@ export class XiaoZhiMcpBridge {
     }
 
     if (message.method === 'tools/list') {
+      await this.refreshUpstreamTools();
       this.send({
         jsonrpc: '2.0',
         id: message.id,
         result: {
-          tools: Object.entries(this.tools).map(([name, tool]) => ({
+          tools: Object.entries(this.allTools()).map(([name, tool]) => ({
             name,
             description: tool.description,
             inputSchema: tool.inputSchema,
@@ -221,7 +249,7 @@ export class XiaoZhiMcpBridge {
 
   async handleToolCall(message) {
     const { name, arguments: args = {} } = message.params ?? {};
-    const tool = this.tools[name];
+    const tool = this.allTools()[name];
     if (!tool) {
       this.send({
         jsonrpc: '2.0',
